@@ -1,0 +1,141 @@
+public class generateReportQuestionnaireController {
+    public static string status_from {get;set;}
+    public static string status_to {get; set;}
+    public static List<QuestionnaireObj> listwquestionniares {get; set;}
+    public static integer recordsize  {get;set;}
+    public static integer currentIndex {get;set;}
+    public static final integer MAX_TABLE_ROWS = 20 ; 
+    public generateReportQuestionnaireController(ApexPages.StandardController controller)
+    {
+        recordsize = 0;
+        status_from = apexpages.currentpage().getparameters().get('status_from');
+        status_to = apexpages.currentpage().getparameters().get('status_to');
+        if (! String.isBlank(status_from) && ! String.isBlank(status_to))
+        {
+            getrecordInfo();
+        }
+    }
+
+    public List<SelectOption> getitems()
+    {
+        List<SelectOption> options = new List<SelectOption>();
+        Schema.DescribeFieldResult fieldResult =CDHP_parent__C.Status__c.getDescribe();
+        
+        List<Schema.PicklistEntry> ple = fieldResult.getPicklistValues();
+        options.add(new SelectOption('--None--','--None--'));
+        for( Schema.PicklistEntry f : ple)
+        {
+            options.add(new SelectOption(f.getLabel(), f.getValue()));
+        }   
+        return options;
+    }
+    public static pagereference next(){
+        // 85 
+        currentindex = 0 -> 0 to 19 
+         currentindex =  1 -> 20 to 39 
+         currentindex =  2 -> 40 to 59 
+         currentindex + =1;
+         If ( currentIndex => 0 && currentIndex < maxsize + 1 ) {
+        for( i= currentIndex * 20 ; i< (currentIndex * 20) + 19 ; i++){
+            Loop the listwquestionniares 
+                Add elements in a List 
+            Next 
+        }
+        }
+        return null;
+    }
+
+    public static pagereference previous(){
+         currentindex - =1; 
+            If ( currentIndex => 0 && currentIndex < maxsize + 1 ) {
+        for( i= currentIndex * 20 ; i< (currentIndex * 20) + 19 ; i++){
+            Loop the listwquestionniares 
+                Add elements in a List 
+            Next 
+        }
+        }
+        return null;
+    }
+    public static pagereference first(){ 
+        currentindex  = 0;
+
+    } 
+
+     public static pagereference last (){ 
+currentindex  = maxsize;
+        
+    }
+    public static PageReference getrecordInfo()
+    {
+        try
+        {
+            currentIndex = 0; 
+            listwquestionniares = new List<QuestionnaireObj>();
+            List<CDHP_Parent__c> questionniares = new  List<CDHP_Parent__c>();
+            if (Market_Segment ! = null ) {
+                questionniares=[SELECT id, Name,Account__r.Name, Status__C,  Status_JSON_Info__c  FROM CDHP_Parent__c WHERE Market_Segment := 'Market_Segment' ];
+            }else{
+                questionniares=[SELECT id, Name,Account__r.Name, Status__C,  Status_JSON_Info__c  FROM CDHP_Parent__c ];
+            }
+            Integer maxseries = questionniares.size() / 20; 
+            // remainder value is on the last page 
+        for(CDHP_Parent__c questionniare :  questionniares)
+        {
+            
+            If (questionniare.Status_JSON_Info__c  != null)
+            {
+                
+                Map<String, Object> StatusInfo = (Map<String, Object>) JSON.deserializeUntyped (questionniare.Status_JSON_Info__c);
+                date date1 = StatusInfo.get(status_from)== null ? null : Date.parse((string)StatusInfo.get(status_from)) ;
+                date date2 = StatusInfo.get(status_to)== null ? null : Date.parse((string)StatusInfo.get(status_to));
+                
+                if (date1 != null && date2 != null){
+                    
+                    
+                    Integer int1 = date1.daysBetween(date2);
+                    
+                    listwquestionniares.add(new QuestionnaireObj(questionniare.id,questionniare.Name, int1, questionniare.Account__r.Name, questionniare.Status__c, date1, date2, questionniare.Account__c));
+                    
+                }
+            }
+            
+        }
+    }catch(exception ex){
+        system.debug('>>> Exception >>' + ex.getMessage());
+    }
+    recordsize = listwquestionniares.size();
+    return null;
+    }
+
+    public static PageReference gotoPdfPage(){
+    PageReference pgref1 = new PageReference('/apex/generatePDFReportQuestionniare_SG');
+        pgref1.getParameters().put('status_from',status_from);
+            pgref1.getParameters().put('status_to',status_to);
+        pgref1.setRedirect(true);
+            return pgref1 ;
+        
+    }
+    public Class QuestionnaireObj {
+        public id recordId {get;set;}
+        public id accountId {get;set;}
+        public String Name {get; set;}
+        public Integer no_of_days  {get; set;}
+        public String AccountName  {get; set;}
+        public String Status  {get; set;}
+        public string status1_date {get; set;}
+        public string status2_date {get; set;}
+        Public QuestionnaireObj(Id recordId, String Name,  Integer no_of_days, String AccountName, String Status, Date status1_date, Date status2_date, id accountId )
+        {
+            this.recordId =recordId;
+            this.Name = name;
+            This.no_of_days = no_of_days;
+            This.Accountname = AccountName;
+            This.status= status;
+            this.status1_date= status1_date.format();
+            this.status2_date= status2_date.format();
+            this.accountid = accountId;
+        }
+        
+    }
+
+}
